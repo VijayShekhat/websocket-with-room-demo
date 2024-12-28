@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Socket.IO Example</title>
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+</head>
+<body>
+  <h1>Socket.IO WebSocket Client</h1>
+  <div>
+    <p>Enter your message below:</p>
+    <textarea id="messageInput" rows="4" cols="50"></textarea><br/>
+    <button id="sendButton" onclick="sendMessage()">Send Message</button>
+  </div>
+
+  <div>
+    <p>Messages received:</p>
+    <ul id="messages"></ul>
+  </div>
+
+  <script>
+    // Hardcoded JWT token
+    const jwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInVzZXJuYW1lIjoidmlqYXkiLCJpYXQiOjE3MzUzNjcyMzQsImV4cCI6MTczNTM3MDgzNH0.tAn3_6qrYMq78iL-ElvCWm05ebUaUecuyl5sp03UzTc';
+
+    // Connect to the WebSocket server with the JWT token in the Authorization header
+    const socket = io('http://localhost:3000', {
+      transports: ['websocket'], // Using WebSocket transport
+      query: 'token='+jwtToken,
+      extraHeaders: {
+        authorization: `bearer ${jwtToken}`
+      }
+    });
+
+    socket.on('connect', () => {
+      console.log('Connected to WebSocket server');
+      
+      // Emit joinOrder to join a specific order room
+      const orderId = 4; // Replace with actual order ID
+      socket.emit('joinOrder', orderId);
+
+      // Listen for new messages
+      socket.on('newMessage', (message) => {
+        console.log('New message:', message);
+        const messageList = document.getElementById('messages');
+        const newMessage = document.createElement('li');
+        newMessage.textContent = message;
+        messageList.appendChild(newMessage);
+      });
+
+      // Listen for user join events
+      socket.on('userJoined', (data) => {
+        console.log(`User with ID ${data.userId} joined the room`);
+      });
+
+      // Listen for errors
+      socket.on('error', (errorMessage) => {
+        console.error('Error:', errorMessage);
+        alert('An error occurred: ' + errorMessage);
+      });
+    });
+
+    // Function to send a message to the WebSocket room
+    function sendMessage() {
+      const message = document.getElementById('messageInput').value;
+      const orderId = 4; // Specify the orderId you want to send the message to
+      if (!message.trim()) {
+        alert('Please enter a message');
+        return;
+      }
+      socket.emit('sendMessage', { message, orderId }); // Send both message and orderId as an object
+      document.getElementById('messageInput').value = ''; // Clear input field
+    }
+  </script>
+</body>
+</html>
